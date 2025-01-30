@@ -1,10 +1,12 @@
-import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Navigate, useParams } from "react-router-dom";
 import AccountNav from "../AccountNav";
 import Perks from "./Perks";
 import PhotosUploader from "./PhotosUploader";
+import axios from "axios";
 
 const PlacesForm = () => {
+    const { id } = useParams()
     const [title, setTitle] = useState('');
     const [address, setAddress] = useState('');
     const [addedPhotos, setAddedPhotos] = useState([]);
@@ -16,6 +18,23 @@ const PlacesForm = () => {
     const [maxGuests, setMaxGuests] = useState(1);
     const [price, setPrice] = useState(100);
     const [redirect, setRedirect] = useState(false);
+
+    useEffect(() => {
+        if (!id) return;
+        axios.get('/places/' + id).then(response => {
+            const { data } = response;
+            setTitle(data.title);
+            setAddress(data.address);
+            setAddedPhotos(data.photos);
+            setDescription(data.description);
+            setPerks(data.perks);
+            setExtraInfo(data.extraInfo);
+            setCheckIn(data.checkIn);
+            setCheckOut(data.checkOut);
+            setMaxGuests(data.maxGuests);
+            setPrice(data.price);
+        });
+    }, [id]);
 
     function inputHeader(text) {
         return <h2 className="text-2xl mt-4">{text}</h2>
@@ -37,8 +56,13 @@ const PlacesForm = () => {
     const savePlace = async e => {
         e.preventDefault();
         const placeData = { title, address, addedPhotos, description, perks, extraInfo, checkIn, checkOut, maxGuests, price };
-        await axios.post('/places', placeData);
-        setRedirect(true);
+        if(id){
+            await axios.put('/places', { id, ...placeData });
+            setRedirect(true);
+        } else {
+            await axios.post('/places', placeData);
+            setRedirect(true);
+        }
     }
 
     if (redirect) return <Navigate to={'/account/places'} />
@@ -80,7 +104,7 @@ const PlacesForm = () => {
                         <input type="number" value={price} onChange={e => setPrice(e.target.value)} />
                     </div>
                 </div>
-                <button className="primary my-4">Save</button>
+                <button type="submit" className="primary my-4">Save</button>
             </form>
         </div>
     )
